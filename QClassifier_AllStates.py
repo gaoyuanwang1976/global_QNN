@@ -32,6 +32,8 @@ if __name__=="__main__":
     parser.add_argument('-i','--input_data', required=True,help='the input data')
     parser.add_argument('--input_type', required=False,help='input type, density matrix or vector',default='density_matrix')
     parser.add_argument('--global_state', help='whether to use global density matrix for training',action='store_true')
+    parser.add_argument('--skip_final_rotation', required=False,help='whether to skip the final rotation layer in the RealAmplitude ansatz',default=False)
+    parser.add_argument('--output', required=True,help='output name to save the best model')
     args = parser.parse_args()
 
 
@@ -42,6 +44,7 @@ if __name__=="__main__":
     partition_size=args.partition_size
     if partition_size != 'max':
         parition_size = int(partition_size)
+    skip_final_rotation=args.skip_final_rotation
 
     ## for both cobyla and spsa, derivative is the objective is not used
     if args.optimizer.lower() == 'cobyla':
@@ -53,6 +56,7 @@ if __name__=="__main__":
         optimizer = COBYLA(maxiter=100)
 
     dataset=args.input_data
+    output_name=args.output
     X_input = np.loadtxt(dataset+'X.dat',dtype=np.complex128)
     y_input_original = np.loadtxt(dataset+'y.dat',dtype=np.complex128)
     y_input=preprocessing.unify_y_label(y_input_original) #change output (0,1) to (-1,1)
@@ -100,7 +104,8 @@ if __name__=="__main__":
     assert(n_qubit==int(n_qubit))
     n_qubit=int(n_qubit)
     feature_map = RawFeatureVector(feature_dimension=n_features) # amplitude encoding 
-    ansatz = RealAmplitudes(num_qubits=n_qubit,reps=n_layers,insert_barriers=True,entanglement='sca',flatten=True)
+    ansatz = RealAmplitudes(num_qubits=n_qubit,reps=n_layers,insert_barriers=True,entanglement='sca',flatten=True,skip_final_rotation_layer=skip_final_rotation)
+    print('number of parameters in the ansatz',len(ansatz.parameters))
     #ansatz = EfficientSU2(4, su2_gates=['rz'], entanglement='circular', reps=n_layers, flatten=False)
 
     #theta_params = ParameterVector('theta', len(ansatz.parameters))
@@ -117,7 +122,7 @@ if __name__=="__main__":
     def callback_function(current_weight, obj_func_eval):
         objective_func_vals.append(obj_func_eval)
         weights.append(current_weight)
-    weights_ini=[0.5]*len(ansatz.parameters)
+    weights_ini=[0]*len(ansatz.parameters)
     ### ansatz has to be equal to the ansatz of the circuit, i.e., everything after the amplitude encoding.
     #circuit_qnn = global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters,input_gradients=False)
     if args.input_type=='vector_estimatorqnn':
@@ -161,10 +166,11 @@ if __name__=="__main__":
     
     predict_one_prob=(best_model.predict_prob(Xtest_DM)+1)*1./2
     auc=roc_auc_score(ytest,predict_one_prob)
-    print(best_epoch,auc,best_test)
+    print(best_epoch,np.round(auc,3),np.round(best_test,3))
+    best_model.save(output_name+".model")
     #final_weight=circuit_classifier.weights[-len(ansatz.parameters):]
     #ansatz_best=ansatz.assign_parameters(final_weight)
-    #print(final_weight)
+    #print(len(final_weight))
     #print(Operator(ansatz_best).data)
 
 

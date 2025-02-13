@@ -80,6 +80,27 @@ def construct_required_states(X,Y):
 
     return np.array(X_DM),np.array(X_one_DM),np.array(X_zero_DM),np.array(X_one_glob),np.array(X_zero_glob),np.array(X_glob),np.array(y_glob)
 
+def construct_required_states_classical(X,Y):
+    dim=len(X[0])
+    X_one=[]
+    X_zero=[]
+    X_one_glob=np.zeros((dim))
+    X_zero_glob=np.zeros((dim))
+    for data_i,y in zip(X,Y):
+        if y==1:
+            X_one.append(data_i)
+            X_one_glob=X_one_glob+data_i
+        elif y==0 or y==-1:
+            X_zero.append(data_i)
+            X_zero_glob=X_zero_glob+data_i
+        else:
+            raise ValueError("Unknown label")
+    X_one_glob=X_one_glob/len(X_one)
+    X_zero_glob=X_zero_glob/len(X_zero)   
+    X_glob=[X_one_glob,X_zero_glob]
+    y_glob=[1,0]
+    return np.array(X_glob),np.array(y_glob)
+
 
 def construct_required_states_EQ(X,Y):
     dim=len(X[0])
