@@ -9,7 +9,7 @@ from qiskit.circuit.library import RealAmplitudes,ZZFeatureMap,RXGate,EfficientS
 from qiskit_machine_learning.circuit.library import QNNCircuit
 import preprocessing
 from qiskit_algorithms.utils import algorithm_globals
-algorithm_globals.random_seed = 42
+#algorithm_globals.random_seed = 42
 import test_core
 import copy
 import argparse
@@ -122,15 +122,15 @@ if __name__=="__main__":
     def callback_function(current_weight, obj_func_eval):
         objective_func_vals.append(obj_func_eval)
         weights.append(current_weight)
-    weights_ini=[0]*len(ansatz.parameters)
+    #weights_ini=[0]*len(ansatz.parameters)
     ### ansatz has to be equal to the ansatz of the circuit, i.e., everything after the amplitude encoding.
     #circuit_qnn = global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters,input_gradients=False)
     if args.input_type=='vector_estimatorqnn':
         circuit_qnn = EstimatorQNN(circuit=qc,input_params=feature_map.parameters,weight_params=ansatz.parameters)
-        circuit_classifier = NeuralNetworkClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini)
+        circuit_classifier = NeuralNetworkClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     elif args.input_type=='density_matrix':
         circuit_qnn=global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters)
-        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini)
+        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     else:
         raise ValueError("Unknown input type")
 ##########################
@@ -167,7 +167,8 @@ if __name__=="__main__":
     predict_one_prob=(best_model.predict_prob(Xtest_DM)+1)*1./2
     auc=roc_auc_score(ytest,predict_one_prob)
     print(best_epoch,np.round(auc,3),np.round(best_test,3))
-    best_model.save(output_name+".model")
+    if output_name!='None':
+        best_model.save(output_name+".model")
     #final_weight=circuit_classifier.weights[-len(ansatz.parameters):]
     #ansatz_best=ansatz.assign_parameters(final_weight)
     #print(len(final_weight))
