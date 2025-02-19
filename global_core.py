@@ -72,8 +72,9 @@ class MixedState_EstimatorQNN(EstimatorQNN):
         #weights_ = self._validate_weights(weights)
         
         output_data = self._forward(input_data, weights)
-        assert(not any(output_data)<-1 and not any(output_data)>1)
-        output_data= (output_data+1)/2
+        assert(not any(output_data)<-1 and not any(output_data)>1) ## output [-1,1]
+        #output_data= (output_data+1)/2
+        output_data= 1/(1 + np.exp(-10*output_data)) ##output [0,1] with sigmoid
         #return self._validate_forward_output(output_data, shape)
 
         return output_data
@@ -133,8 +134,8 @@ class MixedState_NNClassifier(NeuralNetworkClassifier):
         if self._neural_network.output_shape == (1,):
             # Binary classification
             raw_output = self._neural_network.forward(X, self._fit_result.x)
-            raw_output=raw_output*2-1 #Change the neural network output from (0,1) to (-1,1) for binary classification, use in combination with MixedState_EstimatorQNN and 'absolute error'
-            predict = np.sign(raw_output)
+            raw_output=raw_output*2-1 #Change the neural network output from (0,1) to (-1,1) to use np.sign for prediction
+            predict = (np.sign(raw_output)+1)*1./2
 
         else:
             # Multi-class classification
@@ -158,7 +159,7 @@ class MixedState_NNClassifier(NeuralNetworkClassifier):
         if self._neural_network.output_shape == (1,):
             # Binary classification
             raw_output = self._neural_network.forward(X, self._fit_result.x)
-            raw_output=raw_output*2-1 #Change the neural network output from (0,1) to (-1,1) for binary classification, use in combination with MixedState_EstimatorQNN and 'absolute error'
+            #raw_output=raw_output*2-1 #Change the neural network output from (0,1) to (-1,1) for binary classification, use in combination with MixedState_EstimatorQNN and 'absolute error'
             
         return raw_output
 

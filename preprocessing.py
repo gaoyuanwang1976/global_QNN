@@ -147,7 +147,7 @@ def unify_y_label(y_input_original):
         elif y==-1:
             y_input.append(y)
         elif y==0:
-            y_input.append(-1)
+            y_input.append(0)
         else:
             raise ValueError("unknown label")
     y_input=np.array(y_input)
