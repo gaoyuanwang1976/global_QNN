@@ -147,7 +147,7 @@ if __name__=="__main__":
         objective_func_vals.append(obj_func_eval)
         weights.append(current_weight)
     #weights_ini=np.random.normal(size=len(ansatz.parameters))
-    weights_ini=[0]*len(ansatz.parameters)
+    #weights_ini=[0]*len(ansatz.parameters)
     ### ansatz has to be equal to the ansatz of the circuit, i.e., everything after the amplitude encoding.
     #circuit_qnn = global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters,input_gradients=False)
     if args.input_type=='vector_estimatorqnn':
@@ -155,7 +155,7 @@ if __name__=="__main__":
         circuit_classifier = NeuralNetworkClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     elif args.input_type=='density_matrix':
         circuit_qnn=global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters)
-        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini)
+        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     else:
         raise ValueError("Unknown input type")
 
