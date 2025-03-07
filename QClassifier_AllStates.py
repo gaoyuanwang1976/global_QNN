@@ -36,6 +36,7 @@ if __name__=="__main__":
     parser.add_argument('--global_state', help='whether to use global density matrix for training',action='store_true')
     parser.add_argument('--skip_final_rotation', required=False,help='whether to skip the final rotation layer in the RealAmplitude ansatz',default=False)
     parser.add_argument('--num_batches', required=False,help='number of batches for global quantum state, for multi-class dataset, it is the nnumber of batches per class',default=1)
+    parser.add_argument('--initial_weight', required=False,help='initial weight of the neural network model',default=None)
     
     parser.add_argument('--output', required=True,help='output name to save the best model')
     args = parser.parse_args()
@@ -60,8 +61,11 @@ if __name__=="__main__":
         print("problem with parsing optimizer, defaulting to COBYLA")
         optimizer = COBYLA(maxiter=200)
 
+
+
     dataset=args.input_data
     output_name=args.output
+
 
     X_input = np.loadtxt(dataset+'X.dat',dtype=np.complex128)
     y_input = np.loadtxt(dataset+'y.dat',dtype=np.complex128)
@@ -149,7 +153,10 @@ if __name__=="__main__":
         objective_func_vals.append(obj_func_eval)
         weights.append(current_weight)
     #weights_ini=np.random.normal(size=len(ansatz.parameters))
-    weights_ini=[0.5]*len(ansatz.parameters)
+    if args.initial_weight==None:
+        weights_ini=None
+    else:
+        weights_ini=[float(args.initial_weight)]*len(ansatz.parameters)
     ### ansatz has to be equal to the ansatz of the circuit, i.e., everything after the amplitude encoding.
     #circuit_qnn = global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters,input_gradients=False)
     if args.input_type=='vector_estimatorqnn':
@@ -157,7 +164,7 @@ if __name__=="__main__":
         circuit_classifier = NeuralNetworkClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     elif args.input_type=='density_matrix':
         circuit_qnn=global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters)
-        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
+        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini)
     else:
         raise ValueError("Unknown input type")
 
