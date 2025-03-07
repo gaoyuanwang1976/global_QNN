@@ -35,6 +35,8 @@ if __name__=="__main__":
     parser.add_argument('--input_type', required=False,help='input type, density matrix or vector',default='density_matrix')
     parser.add_argument('--global_state', help='whether to use global density matrix for training',action='store_true')
     parser.add_argument('--skip_final_rotation', required=False,help='whether to skip the final rotation layer in the RealAmplitude ansatz',default=False)
+    parser.add_argument('--num_batches', required=False,help='number of batches for global quantum state, for multi-class dataset, it is the nnumber of batches per class',default=1)
+    
     parser.add_argument('--output', required=True,help='output name to save the best model')
     args = parser.parse_args()
 
@@ -91,15 +93,15 @@ if __name__=="__main__":
 
     
 
-
+    number_of_batches=int(args.num_batches)
 
     if args.input_type=='density_matrix':
         print('using density matrix')
         data_dimension=np.sqrt(len(Xtrain[0]))
         assert(data_dimension==int(data_dimension))
         data_dimension=int(data_dimension)
-        Xtrain_DM,Xtrain_one_DM,Xtrain_zero_DM,Xtrain_one_glob,Xtrain_zero_glob,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM(Xtrain,ytrain)
-        Xtest_DM,Xtest_one_DM,Xtest_zero_DM,Xtest_one_glob,Xtest_zero_glob,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM(Xtest,ytest)
+        Xtrain_DM,Xtrain_one_DM,Xtrain_zero_DM,Xtrain_one_glob,Xtrain_zero_glob,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM(Xtrain,ytrain,number_of_batches)
+        Xtest_DM,Xtest_one_DM,Xtest_zero_DM,Xtest_one_glob,Xtest_zero_glob,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM(Xtest,ytest,number_of_batches)
 
     elif args.input_type=='vector':
         data_dimension=int(len(Xtrain[0]))
@@ -147,7 +149,7 @@ if __name__=="__main__":
         objective_func_vals.append(obj_func_eval)
         weights.append(current_weight)
     #weights_ini=np.random.normal(size=len(ansatz.parameters))
-    #weights_ini=[0]*len(ansatz.parameters)
+    weights_ini=[0.5]*len(ansatz.parameters)
     ### ansatz has to be equal to the ansatz of the circuit, i.e., everything after the amplitude encoding.
     #circuit_qnn = global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters,input_gradients=False)
     if args.input_type=='vector_estimatorqnn':
@@ -178,7 +180,7 @@ if __name__=="__main__":
     for epoch in range(n_epochs):
         if args.global_state is True:
             if epoch==0:
-                print('Training on global objective function')
+                print('Training on global objective function with batch number: ',number_of_batches)
             circuit_classifier.fit(Xtrain_glob,ytrain_glob)
         else:
             circuit_classifier.fit(Xtrain_DM,ytrain)

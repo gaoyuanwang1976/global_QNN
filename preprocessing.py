@@ -19,7 +19,27 @@ def normalize_amplitude(X):
         X_norm.append(normalize(x))
     return np.array(X_norm)
 
-def construct_required_states_DM(X,Y):
+def construct_required_states_DM(X,Y,number_of_batches):
+
+    total_number_of_data=len(X)
+    batch_size_list=[]
+    batch_offset=[]
+    offset=0
+    batch_size=int(total_number_of_data/number_of_batches)
+    remaining=total_number_of_data-batch_size*number_of_batches
+    assert(remaining>=0)
+    index_remaining=0
+    for index_batch in range(number_of_batches):
+        if index_remaining < remaining:
+            batch_size_list.append(batch_size+1)
+            index_remaining+=1
+
+        else:
+            batch_size_list.append(batch_size)
+        batch_offset.append(offset)
+        offset+=batch_size_list[-1]
+    assert(sum(batch_size_list)==total_number_of_data)
+    #print(batch_offset,batch_size_list)
 
     dim=np.sqrt(len(X[0]))
     assert(dim==int(dim))
@@ -27,27 +47,40 @@ def construct_required_states_DM(X,Y):
     X_DM=[]
     X_one_DM=[]
     X_zero_DM=[]
-    X_one_glob=np.zeros((dim,dim))
-    X_zero_glob=np.zeros((dim,dim))
-    for data_i,y in zip(X,Y):
-        x_dm=np.reshape(data_i,shape=(dim,dim))
-        #x_dm=np.real_if_close(x_dm)
-        X_DM.append(x_dm)
 
-        if y==1:
-            X_one_DM.append(x_dm)
-            X_one_glob=X_one_glob+x_dm
-        elif y==0 or y==-1:
-            X_zero_DM.append(x_dm)
-            X_zero_glob=X_zero_glob+x_dm
-        else:
-            raise Error("Unknown label")
-    X_one_glob=X_one_glob/len(X_one_DM)
-    X_zero_glob=X_zero_glob/len(X_zero_DM)   
-    X_glob=[X_one_glob,X_zero_glob]
-    y_glob=[1,0]
-    X_one_glob=[X_one_glob]
-    X_zero_glob=[X_zero_glob]
+    X_one_glob=[]
+    X_zero_glob=[]
+    X_glob=[]
+    y_glob=[]
+    for batch_index in range(number_of_batches):
+        X_current=X[batch_offset[batch_index]:batch_offset[batch_index]+batch_size_list[batch_index]]
+        Y_current=Y[batch_offset[batch_index]:batch_offset[batch_index]+batch_size_list[batch_index]]
+        one_num_tmp=0
+        zero_num_tmp=0
+        X_zero_glob_tmp=np.zeros((dim,dim))
+        X_one_glob_tmp=np.zeros((dim,dim))
+        for data_i,y in zip(X_current,Y_current):
+            x_dm=np.reshape(data_i,shape=(dim,dim))
+            X_DM.append(x_dm)
+
+            if y==1:
+                X_one_DM.append(x_dm)
+                X_one_glob_tmp=X_one_glob_tmp+x_dm
+                one_num_tmp+=1
+            elif y==0 or y==-1:
+                X_zero_DM.append(x_dm)
+                X_zero_glob_tmp=X_zero_glob_tmp+x_dm
+                zero_num_tmp+=1
+            else:
+                raise Error("Unknown label")
+        X_one_glob.append(X_one_glob_tmp/one_num_tmp)
+        X_zero_glob.append(X_zero_glob_tmp/zero_num_tmp)
+    for one,zero in zip(X_one_glob,X_zero_glob):
+        X_glob.append(one)
+        X_glob.append(zero)
+        y_glob.append(1)
+        y_glob.append(0)
+    #print(len(X_glob),y_glob)
     return np.array(X_DM),np.array(X_one_DM),np.array(X_zero_DM),np.array(X_one_glob),np.array(X_zero_glob),np.array(X_glob),np.array(y_glob)
 
 def construct_required_states(X,Y):
