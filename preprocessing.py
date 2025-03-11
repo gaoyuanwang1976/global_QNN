@@ -1,5 +1,7 @@
 import numpy as np
 from qiskit.quantum_info import DensityMatrix
+import qiskit.quantum_info as qi
+from sklearn.cluster import SpectralClustering
 
 def normalize(v):
     norm=np.linalg.norm(v)
@@ -18,6 +20,108 @@ def normalize_amplitude(X):
     for x in X:
         X_norm.append(normalize(x))
     return np.array(X_norm)
+
+def compute_fidelity_matrix(X):
+    num_data=len(X)
+    fidelity_matrix=np.zeros((num_data,num_data))
+    for index_i,i in enumerate(X):
+        fidelity_matrix[index_i,index_i]=1
+        for index_j in range(index_i+1,num_data):
+            j=X[index_j]
+            fidelity=qi.state_fidelity(i,j)
+            fidelity_matrix[index_i,index_j]=fidelity
+            fidelity_matrix[index_j,index_i]=fidelity
+    return fidelity_matrix
+
+def construct_required_states_DM_smartBatches(X,Y,number_of_batches):
+    print('using smart batching')
+    total_number_of_data=len(X)
+    all_labels=sorted(set(Y))
+    number_of_classes=len(all_labels)
+    dim=np.sqrt(len(X[0]))
+    assert(dim==int(dim))
+    dim=int(dim)
+
+    X_DM=[]
+    X_perClass_DM=[[] for _ in range(number_of_classes)]
+    X_glob=[]
+    y_glob=[]
+    for data_i,y in zip(X,Y):
+        x_dm=np.reshape(data_i,shape=(dim,dim))
+        X_DM.append(x_dm)
+        current_label_index=all_labels.index(y)
+        X_perClass_DM[current_label_index].append(x_dm)
+
+    for class_x,class_y in zip(X_perClass_DM,all_labels):
+        
+        fidelity_matrix=compute_fidelity_matrix(class_x)
+        clustering=SpectralClustering(n_clusters=number_of_batches,affinity='precomputed').fit(fidelity_matrix).labels_
+        global_states=np.zeros((number_of_batches,dim,dim),dtype=np.complex128)
+        number_per_cluster=np.zeros(number_of_batches)
+        for x_current,cluster in zip(class_x,clustering):
+            global_states[cluster]+=x_current
+            number_per_cluster[cluster]+=1
+        for cluster_index in range(number_of_batches):
+            global_states[cluster_index]=global_states[cluster_index]/number_per_cluster[cluster_index]
+
+        global_labels=[class_y]*number_of_batches
+        for x,y in zip(global_states,global_labels):
+            X_glob.append(x)
+            y_glob.append(y)
+    return np.array(X_DM),np.array(X_glob),np.array(y_glob)
+
+
+
+def construct_required_states_DM_randomBatches(X,Y,number_of_batches):
+    print('using random batching')
+    total_number_of_data=len(X)
+    all_labels=sorted(set(Y))
+    number_of_classes=len(all_labels)
+    dim=np.sqrt(len(X[0]))
+    assert(dim==int(dim))
+    dim=int(dim)
+
+    X_DM=[]
+    X_perClass_DM=[[] for _ in range(number_of_classes)]
+    X_glob=[]
+    y_glob=[]
+    for data_i,y in zip(X,Y):
+        x_dm=np.reshape(data_i,shape=(dim,dim))
+        X_DM.append(x_dm)
+        current_label_index=all_labels.index(y)
+        X_perClass_DM[current_label_index].append(x_dm)
+    
+    for class_x,class_y in zip(X_perClass_DM,all_labels):
+        batch_size=int(len(class_x)/number_of_batches)
+        batch_size_list=[]
+        remaining=len(class_x)-batch_size*number_of_batches
+        assert(remaining>=0)
+        batch_offset=[]
+        offset=0
+
+        index_remaining=0
+        for index_batch in range(number_of_batches):
+            if index_remaining < remaining:
+                batch_size_list.append(batch_size+1)
+                index_remaining+=1
+
+            else:
+                batch_size_list.append(batch_size)
+            batch_offset.append(offset)
+            offset+=batch_size_list[-1]
+        assert(sum(batch_size_list)==len(class_x))
+
+        for batch_index in range(number_of_batches):
+            X_current=class_x[batch_offset[batch_index]:batch_offset[batch_index]+batch_size_list[batch_index]]
+            global_state=np.zeros((dim,dim),dtype=np.complex128)
+            for x_current in X_current:
+                global_state+=x_current
+            global_state=global_state/len(X_current)
+            
+            X_glob.append(global_state)
+            y_glob.append(class_y)
+    return np.array(X_DM),np.array(X_glob),np.array(y_glob)
+
 
 def construct_required_states_DM(X,Y,number_of_batches):
 

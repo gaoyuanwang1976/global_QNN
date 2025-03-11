@@ -37,6 +37,7 @@ if __name__=="__main__":
     parser.add_argument('--skip_final_rotation', required=False,help='whether to skip the final rotation layer in the RealAmplitude ansatz',default=False)
     parser.add_argument('--num_batches', required=False,help='number of batches for global quantum state, for multi-class dataset, it is the nnumber of batches per class',default=1)
     parser.add_argument('--initial_weight', required=False,help='initial weight of the neural network model',default=None)
+    parser.add_argument('--smart_batch', help='whether to use clustering based batches',action='store_true')
     
     parser.add_argument('--output', required=True,help='output name to save the best model')
     args = parser.parse_args()
@@ -96,7 +97,7 @@ if __name__=="__main__":
     ytest=y_input[split:]
 
     
-
+    smart_batch=args.smart_batch
     number_of_batches=int(args.num_batches)
 
     if args.input_type=='density_matrix':
@@ -104,8 +105,14 @@ if __name__=="__main__":
         data_dimension=np.sqrt(len(Xtrain[0]))
         assert(data_dimension==int(data_dimension))
         data_dimension=int(data_dimension)
-        Xtrain_DM,Xtrain_one_DM,Xtrain_zero_DM,Xtrain_one_glob,Xtrain_zero_glob,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM(Xtrain,ytrain,number_of_batches)
-        Xtest_DM,Xtest_one_DM,Xtest_zero_DM,Xtest_one_glob,Xtest_zero_glob,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM(Xtest,ytest,number_of_batches)
+        if smart_batch==True:
+            Xtrain_DM,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM_smartBatches(Xtrain,ytrain,number_of_batches)
+            Xtest_DM,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM_smartBatches(Xtest,ytest,number_of_batches)
+        else:
+            Xtrain_DM,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM_randomBatches(Xtrain,ytrain,number_of_batches)
+            Xtest_DM,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM_randomBatches(Xtest,ytest,number_of_batches)
+            #Xtrain_DM,Xtrain_one_DM,Xtrain_zero_DM,Xtrain_one_glob,Xtrain_zero_glob,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM(Xtrain,ytrain,number_of_batches)
+            #Xtest_DM,Xtest_one_DM,Xtest_zero_DM,Xtest_one_glob,Xtest_zero_glob,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM(Xtest,ytest,number_of_batches)
 
     elif args.input_type=='vector':
         data_dimension=int(len(Xtrain[0]))
