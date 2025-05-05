@@ -42,6 +42,8 @@ def construct_required_states_DM_smartBatches(X,Y,number_of_batches):
     assert(dim==int(dim))
     dim=int(dim)
 
+    batch_size_list_all_label=[]
+
     X_DM=[]
     X_perClass_DM=[[] for _ in range(number_of_classes)]
     X_glob=[]
@@ -52,6 +54,7 @@ def construct_required_states_DM_smartBatches(X,Y,number_of_batches):
         current_label_index=all_labels.index(y)
         X_perClass_DM[current_label_index].append(x_dm)
 
+
     for class_x,class_y in zip(X_perClass_DM,all_labels):
         
         fidelity_matrix=compute_fidelity_matrix(class_x)
@@ -61,14 +64,18 @@ def construct_required_states_DM_smartBatches(X,Y,number_of_batches):
         for x_current,cluster in zip(class_x,clustering):
             global_states[cluster]+=x_current
             number_per_cluster[cluster]+=1
+
         for cluster_index in range(number_of_batches):
             global_states[cluster_index]=global_states[cluster_index]/number_per_cluster[cluster_index]
 
         global_labels=[class_y]*number_of_batches
-        for x,y in zip(global_states,global_labels):
+
+        for x,y,b_size in zip(global_states,global_labels,number_per_cluster):
             X_glob.append(x)
             y_glob.append(y)
-    return np.array(X_DM),np.array(X_glob),np.array(y_glob)
+            batch_size_list_all_label.append(int(b_size))
+
+    return np.array(X_DM),np.array(X_glob),np.array(y_glob),np.array(batch_size_list_all_label)
 
 
 
@@ -80,6 +87,7 @@ def construct_required_states_DM_randomBatches(X,Y,number_of_batches):
     dim=np.sqrt(len(X[0]))
     assert(dim==int(dim))
     dim=int(dim)
+    batch_size_list_all_label=[]
 
     X_DM=[]
     X_perClass_DM=[[] for _ in range(number_of_classes)]
@@ -91,6 +99,7 @@ def construct_required_states_DM_randomBatches(X,Y,number_of_batches):
         current_label_index=all_labels.index(y)
         X_perClass_DM[current_label_index].append(x_dm)
     
+ 
     for class_x,class_y in zip(X_perClass_DM,all_labels):
         batch_size=int(len(class_x)/number_of_batches)
         batch_size_list=[]
@@ -109,6 +118,7 @@ def construct_required_states_DM_randomBatches(X,Y,number_of_batches):
                 batch_size_list.append(batch_size)
             batch_offset.append(offset)
             offset+=batch_size_list[-1]
+
         assert(sum(batch_size_list)==len(class_x))
 
         for batch_index in range(number_of_batches):
@@ -117,10 +127,12 @@ def construct_required_states_DM_randomBatches(X,Y,number_of_batches):
             for x_current in X_current:
                 global_state+=x_current
             global_state=global_state/len(X_current)
-            
+
             X_glob.append(global_state)
             y_glob.append(class_y)
-    return np.array(X_DM),np.array(X_glob),np.array(y_glob)
+            batch_size_list_all_label.append(int(len(X_current)))
+
+    return np.array(X_DM),np.array(X_glob),np.array(y_glob),np.array(batch_size_list_all_label)
 
 
 def construct_required_states_DM(X,Y,number_of_batches):

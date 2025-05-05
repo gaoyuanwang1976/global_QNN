@@ -106,11 +106,11 @@ if __name__=="__main__":
         assert(data_dimension==int(data_dimension))
         data_dimension=int(data_dimension)
         if smart_batch==True:
-            Xtrain_DM,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM_smartBatches(Xtrain,ytrain,number_of_batches)
-            Xtest_DM,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM_smartBatches(Xtest,ytest,number_of_batches)
+            Xtrain_DM,Xtrain_glob,ytrain_glob,train_batch_size_list=preprocessing.construct_required_states_DM_smartBatches(Xtrain,ytrain,number_of_batches)
+            Xtest_DM,Xtest_glob,ytest_glob,_=preprocessing.construct_required_states_DM_smartBatches(Xtest,ytest,number_of_batches)
         else:
-            Xtrain_DM,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM_randomBatches(Xtrain,ytrain,number_of_batches)
-            Xtest_DM,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM_randomBatches(Xtest,ytest,number_of_batches)
+            Xtrain_DM,Xtrain_glob,ytrain_glob,train_batch_size_list=preprocessing.construct_required_states_DM_randomBatches(Xtrain,ytrain,number_of_batches)
+            Xtest_DM,Xtest_glob,ytest_glob,_=preprocessing.construct_required_states_DM_randomBatches(Xtest,ytest,number_of_batches)
             #Xtrain_DM,Xtrain_one_DM,Xtrain_zero_DM,Xtrain_one_glob,Xtrain_zero_glob,Xtrain_glob,ytrain_glob=preprocessing.construct_required_states_DM(Xtrain,ytrain,number_of_batches)
             #Xtest_DM,Xtest_one_DM,Xtest_zero_DM,Xtest_one_glob,Xtest_zero_glob,Xtest_glob,ytest_glob=preprocessing.construct_required_states_DM(Xtest,ytest,number_of_batches)
 
@@ -130,6 +130,7 @@ if __name__=="__main__":
         Xtest_DM,Xtest_one_DM,Xtest_zero_DM=preprocessing.construct_required_states_EQ(Xtest,ytest)
         Xtrain_DM=np.real_if_close(Xtrain_DM)
         Xtest_DM=np.real_if_close(Xtest_DM)
+
 
 ###############################
 ##### amplitude embedding #####
@@ -171,7 +172,7 @@ if __name__=="__main__":
         circuit_classifier = NeuralNetworkClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function)#,initial_point=weights_ini)
     elif args.input_type=='density_matrix':
         circuit_qnn=global_core.MixedState_EstimatorQNN(circuit=qc,ansatz=ansatz,input_params=feature_map.parameters,weight_params=ansatz.parameters)
-        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini)
+        circuit_classifier = global_core.MixedState_NNClassifier(neural_network=circuit_qnn,optimizer=optimizer,loss= 'absolute_error',warm_start=True,callback=callback_function,initial_point=weights_ini,train_batch_size_list=train_batch_size_list,global_state=args.global_state)
     else:
         raise ValueError("Unknown input type")
 

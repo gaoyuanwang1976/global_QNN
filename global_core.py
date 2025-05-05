@@ -117,16 +117,27 @@ class MixedState_EstimatorQNN(EstimatorQNN):
 
 
 class MixedState_BinaryObjectiveFunction(BinaryObjectiveFunction):
+    def __init__(self,train_batch_size_list: np.ndarray,global_state:bool,**kwargs):
+        super(MixedState_BinaryObjectiveFunction, self).__init__(**kwargs)
+        self.train_batch_size_list = train_batch_size_list
+        self.global_state=global_state
+
     def objective(self, weights: np.ndarray) -> float:
         # predict is of shape (N, 1), where N is a number of samples
         predict = self._neural_network_forward(weights)
         target = np.array(self._y).reshape(predict.shape)
+
+        if self.global_state is True:
+            target=np.repeat(target,self.train_batch_size_list)
+            predict=np.repeat(predict,self.train_batch_size_list,axis=0)
+            
         return float(np.sum(self._loss(predict, target)) / self._num_samples)
 
 class MixedState_NNClassifier(NeuralNetworkClassifier):
-    def __init__(self,**kwargs):
+    def __init__(self,train_batch_size_list: np.ndarray,global_state:bool,**kwargs):
         super(MixedState_NNClassifier, self).__init__(**kwargs)
-    
+        self.train_batch_size_list = train_batch_size_list
+        self.global_state=global_state
     def predict(self, X: np.ndarray) -> np.ndarray:
         self._check_fitted()
         X, _ = self._validate_input(X)
@@ -182,6 +193,7 @@ class MixedState_NNClassifier(NeuralNetworkClassifier):
         # mypy definition
         function: ObjectiveFunction = None
         self._validate_binary_targets(y)
-        function = MixedState_BinaryObjectiveFunction(X, y, self._neural_network, self._loss)
+        
+        function = MixedState_BinaryObjectiveFunction(X=X, y=y, neural_network=self._neural_network, loss=self._loss,train_batch_size_list=self.train_batch_size_list,global_state=self.global_state)
         return function
     
