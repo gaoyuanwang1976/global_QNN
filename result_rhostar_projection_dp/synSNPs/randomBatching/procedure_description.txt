@@ -1,0 +1,16 @@
+using prob,prob_minus1=distribution_randomBatches(Xtrain,ytrain,number_of_tests,batch_size) in DifferentialPrivacyTest.py
+
+class specific. 
+In each class, loop over all states (as rho^*). For each state rho^*, compute Tr(rho^* rho_glob), where rho_glob is the global state of batch size N_i.
+The global state is constructed by taking rho^* out from the list of all states in this class, then sequentially take N_i individual states to compute rho_glob.
+rho_glob_minus1 is the rho_glob without rho^*. 
+if batch size is 2, then rho_glob_minus1 is comprised of only one data point.
+the smaller batch size, the more statistics we have.
+epsilon is calculated as the worst case in calculate_epsilon_correct.py
+batch size : number of tests
+324 : 1 (651 dp for statistics)
+162 : 2 (1302)
+64 : 5 (3255)
+32 : 10 (6510)
+7 : 54 (29946)
+3 : 162 (70308)

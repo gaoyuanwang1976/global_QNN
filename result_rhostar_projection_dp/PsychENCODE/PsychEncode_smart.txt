@@ -1,0 +1,9 @@
+496 training data
+
+batch number : mean number per cluster
+1 : 248
+2 : 124
+5 : 49.6
+10 : 24.8
+20 : 12.4
+
